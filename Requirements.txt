@@ -6,6 +6,5 @@ matplotlib
 seaborn
 scikit-learn
 opencv-python
-gdown
 streamlit
 
