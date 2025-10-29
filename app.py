@@ -17,7 +17,7 @@ model_path = "retinal_model.h5"
 
 if not os.path.exists(model_path):
     with st.spinner("Downloading model, please wait..."):
-        url = "https://drive.google.com/uc?id=1n8zllenScXuFysusgF4OpWqMI_-kzv7y"
+        url = "https://drive.google.com/file/d/1n8zllenScXuFysusgF4OpWqMI_-kzv7y/view?usp=sharing"
         response = requests.get(url)
         with open(model_path, "wb") as f:
             f.write(response.content)
