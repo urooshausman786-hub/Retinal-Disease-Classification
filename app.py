@@ -1,90 +1,72 @@
 import streamlit as st
+import tensorflow as tf
 import numpy as np
 from PIL import Image
-import requests
+import gdown
 import os
 
-# ✅ Use lightweight TensorFlow CPU version
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing import image as keras_image
+# -------------------------------
+# APP CONFIGURATION
+# -------------------------------
+st.set_page_config(page_title="Retinal Disease Classifier", page_icon="🧠", layout="wide")
 
-# -----------------------------
-# Page Setup
-# -----------------------------
-st.set_page_config(page_title="Retinal Disease Classifier 👁️", layout="centered")
+st.title("🩺 Retinal Disease Classification using Deep Learning")
+st.write("Upload a retinal fundus image and let the model predict the disease type.")
 
-st.title("👁️ Retinal Disease Classification")
-st.markdown(
-    """
-    ### Upload a Retinal Image 🩺  
-    This AI model analyzes the retina and predicts possible diseases.  
-    Trained using **Deep Learning (MobileNetV2)** for high accuracy.
-    """
-)
-
-# -----------------------------
-# Download model if not present
-# -----------------------------
+# -------------------------------
+# DOWNLOAD MODEL FROM GOOGLE DRIVE
+# -------------------------------
 MODEL_PATH = "retinal_model.h5"
-MODEL_URL = "https://drive.google.com/uc?id=1n8zllenScXuFysusgF4OpWqMI_-kzv7y"
+
+# 👇 Replace the link below with YOUR Google Drive file ID
+# Example link: https://drive.google.com/file/d/1n8zllenScXuFysusgF4OpWqMI_-kzv7y/view?usp=sharing
+file_id = "1n8zllenScXuFysusgF4OpWqMI_-kzv7y"
+download_url = f"https://drive.google.com/uc?id={file_id}"
 
 if not os.path.exists(MODEL_PATH):
-    with st.spinner("Downloading AI Model... ⏳"):
-        r = requests.get(MODEL_URL)
-        with open(MODEL_PATH, "wb") as f:
-            f.write(r.content)
-    st.success("Model downloaded successfully!")
+    with st.spinner("📥 Downloading model from Google Drive... (this may take a minute)"):
+        gdown.download(download_url, MODEL_PATH, quiet=False)
 
-# -----------------------------
-# Load model safely
-# -----------------------------
+# -------------------------------
+# LOAD MODEL
+# -------------------------------
 @st.cache_resource
-def load_retinal_model():
-    model = load_model(MODEL_PATH)
+def load_model():
+    model = tf.keras.models.load_model(MODEL_PATH)
     return model
 
-model = load_retinal_model()
+model = load_model()
 
-# -----------------------------
-# Define class names
-# -----------------------------
-CLASS_NAMES = [
-    "Normal",
-    "Diabetic Retinopathy",
-    "Glaucoma",
-    "Cataract",
-    "Age-related Macular Degeneration"
-]
+# -------------------------------
+# CLASS NAMES (edit as per your dataset)
+# -------------------------------
+CLASS_NAMES = ['Cataract', 'Diabetic Retinopathy', 'Glaucoma', 'Normal']
 
-# -----------------------------
-# File uploader
-# -----------------------------
-uploaded_file = st.file_uploader("📤 Upload Retinal Image (JPG / PNG):", type=["jpg", "jpeg", "png"])
+# -------------------------------
+# UPLOAD SECTION
+# -------------------------------
+uploaded_file = st.file_uploader("📤 Upload a retinal image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file).convert('RGB')
-    st.image(image, caption="🩻 Uploaded Retinal Image", use_column_width=True)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-    # Preprocess image
+    # Preprocess the image
     img = image.resize((224, 224))
-    img_array = keras_image.img_to_array(img)
-    img_array = np.expand_dims(img_array, axis=0)
-    img_array = img_array / 255.0
+    img_array = tf.keras.preprocessing.image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0) / 255.0
 
-    # Predict
-    with st.spinner("Analyzing image... 🔍"):
+    # Make prediction
+    with st.spinner("🔍 Analyzing image..."):
         prediction = model.predict(img_array)
-        predicted_class = np.argmax(prediction, axis=1)[0]
         confidence = np.max(prediction)
+        predicted_class = CLASS_NAMES[np.argmax(prediction)]
 
-    st.success(f"### 🧠 Predicted Disease: **{CLASS_NAMES[predicted_class]}**")
-    st.progress(float(confidence))
-    st.caption(f"Model Confidence: **{confidence * 100:.2f}%**")
+    # Display results
+    st.success(f"✅ **Predicted Disease:** {predicted_class}")
+    st.info(f"📊 Confidence: {confidence * 100:.2f}%")
 
-    # Display probabilities
-    st.subheader("🔢 Class Probabilities:")
-    for i, class_name in enumerate(CLASS_NAMES):
-        st.write(f"- {class_name}: {prediction[0][i] * 100:.2f}%")
+    st.markdown("---")
+    st.write("**Note:** This app is for academic demonstration only.")
 else:
-    st.info("👆 Please upload a retinal image to get predictions.")
+    st.warning("Please upload a retinal image to get prediction.")
