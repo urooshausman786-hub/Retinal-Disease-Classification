@@ -1,11 +1,14 @@
+
 import streamlit as st
 import numpy as np
 from PIL import Image
+import requests
+import os
+
+# Use lightweight TensorFlow CPU build
 import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image as keras_image
-import requests
-import os
 
 # -----------------------------
 # Page Setup
