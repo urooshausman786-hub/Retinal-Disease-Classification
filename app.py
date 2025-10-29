@@ -1,4 +1,3 @@
-
 import streamlit as st
 import numpy as np
 from PIL import Image
@@ -31,7 +30,13 @@ model = load_retinal_model()
 # -----------------------------------------------
 # 🏷️ Step 3: Define class labels
 # -----------------------------------------------
-CLASS_NAMES = ["Normal", "Diabetic Retinopathy", "Glaucoma", "Cataract", "Age-related Macular Degeneration"]
+CLASS_NAMES = [
+    "Normal",
+    "Diabetic Retinopathy",
+    "Glaucoma",
+    "Cataract",
+    "Age-related Macular Degeneration"
+]
 
 # -----------------------------------------------
 # 🖥️ Step 4: Streamlit App UI
@@ -69,14 +74,4 @@ if uploaded_file is not None:
         st.write(f"{class_name}: {prediction[0][i] * 100:.2f}%")
 else:
     st.info("Please upload an image to start prediction.")
-
-# -----------------------------------------------
-# ✅ Step 5: Instructions for deployment
-# -----------------------------------------------
-st.markdown("""
----
-### 🚀 Deployment Instructions
-1. Do **not upload** the `.h5` model file to GitHub — this app auto-downloads it from Google Drive.
-2. Make sure your `requirements.txt` includes:
-
 
