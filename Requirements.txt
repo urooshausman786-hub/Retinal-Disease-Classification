@@ -1,7 +1,10 @@
-streamlit==1.26.0
-tensorflow-cpu==2.14.0
+streamlit==1.37.0
+Pillow
 numpy
-pillow
+# Try to install tflite_runtime if available, otherwise tensorflow will be used
+tflite-runtime==2.14.0; platform_machine != "x86_64"
+tensorflow==2.14.0; platform_machine == "x86_64"
+
 
 
 
