@@ -4,17 +4,17 @@ from PIL import Image
 import io
 import os
 import traceback
-import tflite_runtime.interpreter as tflite
+import tensorflow as tf  # ✅ use TensorFlow directly (includes TFLite interpreter)
 
 # ---------------- CONFIG ----------------
-MODEL_PATH = "MobileNetV2_model.tflite"  # your .tflite file name
-INPUT_SIZE = (224, 224)                  # model input size
-LABELS = ["Normal", "Cataract", "Glaucoma", "Diabetic Retinopathy"]  # replace with your actual class names
+MODEL_PATH = "MobileNetV2_model.tflite"  # your model file
+INPUT_SIZE = (224, 224)                  # input shape
+LABELS = ["Normal", "Cataract", "Glaucoma", "Diabetic Retinopathy"]  # update to your real classes
 # ----------------------------------------
 
 st.set_page_config(page_title="Retinal Classifier", layout="centered")
 st.title("🩺 Retinal Disease Classifier")
-st.write("Upload a retinal image — the model will predict the type of disease using MobileNetV2 (TFLite).")
+st.write("Upload a retinal image — model predicts the disease using MobileNetV2 (TFLite).")
 
 # ---- Load TFLite Model ----
 @st.cache_resource
@@ -22,7 +22,7 @@ def load_model(model_path):
     if not os.path.exists(model_path):
         st.error(f"❌ Model file not found: {model_path}")
         st.stop()
-    interpreter = tflite.Interpreter(model_path=model_path)
+    interpreter = tf.lite.Interpreter(model_path=model_path)
     interpreter.allocate_tensors()
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
@@ -46,10 +46,10 @@ def preprocess_image(image):
 # ---- Helper: Predict ----
 def predict_image(image):
     input_data = preprocess_image(image)
-    input_index = input_details[0]['index']
+    input_index = interpreter.get_input_details()[0]['index']
     interpreter.set_tensor(input_index, input_data)
     interpreter.invoke()
-    output_data = interpreter.get_tensor(output_details[0]['index'])
+    output_data = interpreter.get_tensor(interpreter.get_output_details()[0]['index'])
     return np.squeeze(output_data)
 
 # ---- File Upload ----
@@ -72,7 +72,6 @@ if uploaded_file:
                 st.success(f"### 🧠 Prediction: {predicted_class}")
                 st.info(f"**Confidence:** {confidence:.2f}%")
 
-                # Display probability table
                 st.write("### 📊 Class Probabilities:")
                 st.dataframe({
                     "Class": LABELS,
@@ -83,4 +82,4 @@ if uploaded_file:
                 st.text(traceback.format_exc())
 else:
     st.info("⬆️ Upload an image to start diagnosis.")
-    st.caption("Ensure your model file is named exactly as `MobileNetV2_model.tflite` and located in the same folder as this app.")
+    st.caption("Ensure your `.tflite` model file is in the same folder as this app.")
