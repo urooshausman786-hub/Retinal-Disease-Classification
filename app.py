@@ -1,8 +1,8 @@
-import streamlit as st
+
+import tflite_runtime.interpreter as tflite
 import numpy as np
 from PIL import Image
-import tensorflow as tf
-import io, os, traceback
+import streamlit as st
 
 # --- CONFIG ---
 MODEL_PATH = "MobileNetV2_model.tflite"
