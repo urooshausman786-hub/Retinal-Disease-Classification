@@ -12,6 +12,7 @@ LABELS = ["Normal", "Cataract", "Glaucoma", "Diabetic Retinopathy"]
 
 st.set_page_config(page_title="Retinal Disease Classifier", layout="centered")
 st.title("🩺 Retinal Disease Classifier")
+st.write("Upload a retinal image to detect possible diseases using MobileNetV2 (TFLite).")
 
 # ---- Load Model ----
 @st.cache_resource
@@ -24,13 +25,13 @@ interpreter = load_model(MODEL_PATH)
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-# ---- Image Preprocess ----
+# ---- Preprocess ----
 def preprocess_image(image):
     image = image.convert("RGB").resize(INPUT_SIZE)
     img = np.array(image, dtype=np.float32) / 255.0
     return np.expand_dims(img, axis=0)
 
-# ---- Prediction ----
+# ---- Predict ----
 def predict(img):
     input_data = preprocess_image(img)
     interpreter.set_tensor(input_details[0]['index'], input_data)
@@ -43,10 +44,13 @@ uploaded = st.file_uploader("📤 Upload retinal image", type=["jpg", "jpeg", "p
 if uploaded:
     image = Image.open(uploaded)
     st.image(image, caption="Uploaded Image", use_column_width=True)
+
     if st.button("🔍 Predict"):
         preds = predict(image)
         exp = np.exp(preds - np.max(preds))
         probs = exp / np.sum(exp)
         top = np.argmax(probs)
+
         st.success(f"### 🧠 Prediction: {LABELS[top]}")
+        st.progress(float(probs[top]))
         st.info(f"Confidence: {probs[top]*100:.2f}%")
