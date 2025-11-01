@@ -1,7 +1,7 @@
-streamlit
+streamlit==1.26.0
+tensorflow-cpu==2.14.0
 numpy
 pillow
-tflite-runtime
 
 
 
