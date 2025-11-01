@@ -1,67 +1,52 @@
 import streamlit as st
-import tensorflow as tf
-import numpy as np
 from PIL import Image
-import io
-import os
+import numpy as np
+import tflite_runtime.interpreter as tflite
 
-# ---------------------- Page Config ----------------------
-st.set_page_config(page_title="🩺 Retinal Disease Classifier", layout="centered")
+# Title
+st.title("🩺 Retinal Disease Classification using TFLite")
 
-st.title("🩺 Retinal Disease Classifier")
-st.write("Upload a retinal image and get predictions using your trained MobileNetV2 TFLite model.")
+# Load labels
+with open("labels.txt", "r") as f:
+    class_names = [line.strip() for line in f.readlines()]
 
-# ---------------------- Model Setup ----------------------
-MODEL_PATH = "MobileNetV2_model.tflite"
-INPUT_SIZE = (224, 224)
-LABELS = ["Normal", "Diabetic Retinopathy", "Glaucoma", "Cataract", "Age-related Macular Degeneration"]  # ✅ change if needed
-
-# ---------------------- Load Model ----------------------
+# Load TFLite model
 @st.cache_resource
-def load_tflite_model(model_path):
-    try:
-        interpreter = tf.lite.Interpreter(model_path=model_path)
-        interpreter.allocate_tensors()
-        return interpreter
-    except Exception as e:
-        st.error(f"❌ Error loading model: {e}")
-        return None
+def load_model():
+    interpreter = tflite.Interpreter(model_path="MobileNetV2_model.tflite")
+    interpreter.allocate_tensors()
+    return interpreter
 
-interpreter = load_tflite_model(MODEL_PATH)
+interpreter = load_model()
 
-if interpreter is None:
-    st.stop()
-
+# Get input and output tensors
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
-# ---------------------- Preprocessing ----------------------
-def preprocess_image(img):
-    img = img.convert("RGB").resize(INPUT_SIZE)
-    x = np.array(img, dtype=np.float32) / 255.0
-    return np.expand_dims(x, axis=0)
+def preprocess_image(image):
+    image = image.resize((224, 224))
+    image = np.array(image, dtype=np.float32)
+    image = image / 255.0
+    image = np.expand_dims(image, axis=0)
+    return image
 
-# ---------------------- Prediction ----------------------
 def predict(image):
-    data = preprocess_image(image)
-    interpreter.set_tensor(input_details[0]['index'], data)
+    input_data = preprocess_image(image)
+    interpreter.set_tensor(input_details[0]['index'], input_data)
     interpreter.invoke()
-    preds = interpreter.get_tensor(output_details[0]['index'])[0]
-    preds = np.exp(preds - np.max(preds))  # softmax
-    preds = preds / np.sum(preds)
-    return preds
+    output_data = interpreter.get_tensor(output_details[0]['index'])
+    return output_data
 
-# ---------------------- Upload Section ----------------------
-uploaded_file = st.file_uploader("📤 Upload a retinal image", type=["jpg", "jpeg", "png"])
+# File uploader
+uploaded_file = st.file_uploader("Upload a retinal image...", type=["jpg", "jpeg", "png"])
 
-if uploaded_file:
+if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, caption="🩻 Uploaded Image", use_column_width=True)
+    st.image(image, caption="Uploaded Retinal Image", use_column_width=True)
 
-    preds = predict(image)
-
-    st.subheader("🔍 Prediction Results:")
-    for i, p in enumerate(preds):
-        st.write(f"{LABELS[i] if i < len(LABELS) else f'Class {i}'}: **{p*100:.2f}%**")
-
-    st.success(f"✅ Predicted: **{LABELS[np.argmax(preds)]}**")
+    if st.button("🔍 Predict"):
+        prediction = predict(image)
+        class_index = np.argmax(prediction)
+        confidence = np.max(prediction)
+        st.success(f"Predicted Disease: **{class_names[class_index]}**")
+        st.info(f"Confidence: {confidence * 100:.2f}%")
