@@ -1,21 +1,21 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import tensorflow as tf  # use TensorFlow directly (includes TFLite)
+import tflite_runtime.interpreter as tflite
 
-# Load TFLite model
+st.title("🩺 Retinal Disease Classification")
+st.write("Upload a retinal image and the model will predict the disease type.")
+
+# Load model
 @st.cache_resource
 def load_model():
-    interpreter = tf.lite.Interpreter(model_path="MobileNetV2_model.tflite")
+    interpreter = tflite.Interpreter(model_path="MobileNetV2_model.tflite")
     interpreter.allocate_tensors()
     return interpreter
 
 interpreter = load_model()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
-
-st.title("🩺 Retinal Disease Classification")
-st.write("Upload a retinal image and the model will predict the disease type.")
 
 uploaded_file = st.file_uploader("Choose a retinal image...", type=["jpg", "jpeg", "png"])
 
