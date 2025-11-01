@@ -1,7 +1,7 @@
 streamlit
-tensorflow
-pillow
+tflite-runtime
 numpy
+pillow
 
 
 
