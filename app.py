@@ -1,48 +1,37 @@
 import streamlit as st
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing import image
+import numpy as np
 from PIL import Image
 
-# -----------------------------------------
-# Title and Description
-# -----------------------------------------
-st.set_page_config(page_title="Retinal Disease Classifier", page_icon="👁️", layout="centered")
+# Page title
+st.title("👁️ Retinal Disease Classification using MobileNetV2")
+st.write("Upload a retinal image to predict the disease class.")
 
-st.title("👁️ Retinal Disease Classification")
-st.markdown("""
-Upload a **retinal image** to get a disease prediction.  
-This is a **demo app** (model integration coming soon).
-""")
+# Load model
+@st.cache_resource
+def load_mobilenet_model():
+    model = load_model("MobileNetV2_model.h5")
+    return model
 
-# -----------------------------------------
-# Image Upload
-# -----------------------------------------
-uploaded_file = st.file_uploader("📤 Upload a retinal image...", type=["jpg", "jpeg", "png"])
+model = load_mobilenet_model()
+
+# Upload image
+uploaded_file = st.file_uploader("Choose a retinal image...", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Retinal Image", use_column_width=True)
-    
-    # -----------------------------------------
-    # Demo Prediction Output
-    # -----------------------------------------
-    st.success("✅ Predicted Disease: **Normal (Demo)**")
-    st.progress(85)
-    st.caption("Confidence: 85% (Demo)")
+    img = Image.open(uploaded_file).resize((224, 224))
+    st.image(img, caption="Uploaded Image", use_container_width=True)
 
-    st.markdown("""
-    ### 🧠 Model Insights (Demo)
-    - The model detected clear and healthy optic disc.
-    - No visible signs of diabetic retinopathy or glaucoma.
-    - Consistent with normal retinal structure.
-    """)
+    # Preprocess image
+    img_array = image.img_to_array(img)
+    img_array = np.expand_dims(img_array, axis=0)
+    img_array = tf.keras.applications.mobilenet_v2.preprocess_input(img_array)
 
-else:
-    st.info("Please upload a retinal image to start the demo.")
+    # Predict
+    predictions = model.predict(img_array)
+    predicted_class = np.argmax(predictions, axis=1)[0]
+    confidence = np.max(predictions) * 100
 
-# -----------------------------------------
-# Footer
-# -----------------------------------------
-st.markdown("""
----
-**Made by Uroosha Usman**  
-_MSc Computer Science | Lucknow University_
-""")
+    st.success(f"✅ Predicted Class: {predicted_class} | Confidence: {confidence:.2f}%")
