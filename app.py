@@ -1,7 +1,7 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import tflite_runtime.interpreter as tflite
+import tensorflow as tf  # ✅ using TensorFlow instead of tflite-runtime
 
 st.title("🩺 Retinal Disease Classification")
 st.write("Upload a retinal image and the model will predict the disease type.")
@@ -9,7 +9,7 @@ st.write("Upload a retinal image and the model will predict the disease type.")
 # Load model
 @st.cache_resource
 def load_model():
-    interpreter = tflite.Interpreter(model_path="MobileNetV2_model.tflite")
+    interpreter = tf.lite.Interpreter(model_path="MobileNetV2_model.tflite")
     interpreter.allocate_tensors()
     return interpreter
 
