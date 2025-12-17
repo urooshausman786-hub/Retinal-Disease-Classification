@@ -1,104 +1,150 @@
 import streamlit as st
+import tensorflow as tf
 import numpy as np
 from PIL import Image
-import tensorflow as tf
 
-# ---------------------- PAGE CONFIG ----------------------
+# -----------------------------
+# Page config
+# -----------------------------
 st.set_page_config(
-    page_title="Retinal Disease Classification",
-    page_icon="🩺",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    page_title="🩺 Retinal Disease Classification",
+    page_icon="👁️",
+    layout="wide"
 )
 
-# ---------------------- CUSTOM CSS ----------------------
+# -----------------------------
+# Custom CSS for purple theme
+# -----------------------------
 st.markdown("""
-    <style>
-    body {
-        background-color: #f5faff;
-        font-family: 'Segoe UI', sans-serif;
-    }
-    .main-title {
-        text-align: center;
-        color: #004e92;
-        font-size: 32px;
-        font-weight: 700;
-        margin-bottom: 0px;
-    }
-    .sub-title {
-        text-align: center;
-        color: #444444;
-        font-size: 18px;
-        margin-top: -5px;
-        margin-bottom: 30px;
-        font-weight: 500;
-    }
-    .stButton>button {
-        background-color: #004e92;
-        color: white;
-        border: None;
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-size: 16px;
-        font-weight: 600;
-        transition: 0.3s;
-    }
-    .stButton>button:hover {
-        background-color: #0078d7;
-        color: white;
-        transform: scale(1.05);
-    }
-    </style>
+<style>
+/* Bright gradient background */
+.stApp {
+    background: linear-gradient(to bottom, #ffffff, #f3e8ff);
+    color: #1e293b;
+    max-width: 900px;
+    margin: auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px 40px;
+}
+
+/* Header */
+.custom-header {
+    color: #7c3aed;
+    text-align: center;
+    font-size: 50px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+/* Subtitle */
+.custom-subtitle {
+    color: #d8b4fe;
+    text-align: center;
+    font-size: 22px;
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 30px;
+}
+
+/* File uploader */
+.css-1v0mbdj.edgvbvh3 {
+    border: 2px dashed #c084fc;
+    border-radius: 12px;
+    padding: 25px;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #1e293b;
+}
+
+/* Image display */
+.stImage {
+    border-radius: 15px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+}
+
+/* Prediction card */
+.prediction-card {
+    background: linear-gradient(to right, #e0c3fc, #8ec5fc);
+    padding: 20px;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin-top: 20px;
+}
+
+/* Info box */
+.stInfo {
+    font-size: 18px;
+    background-color: #ede9fe !important;
+    color: #7c3aed !important;
+    border-radius: 8px;
+    padding: 10px;
+}
+</style>
 """, unsafe_allow_html=True)
 
-# ---------------------- TITLES ----------------------
-st.markdown('<h1 class="main-title">🩺 Retinal Disease Classification System</h1>', unsafe_allow_html=True)
-st.markdown(
-    '<p class="sub-title">Upload a retinal image to detect possible eye diseases using Deep Learning (CNN - MobileNetV2 Model)</p>',
-    unsafe_allow_html=True
+# -----------------------------
+# Header & Subtitle
+# -----------------------------
+st.markdown('<div class="custom-header">🩺 Retinal Disease Classification System</div>', unsafe_allow_html=True)
+st.markdown('<div class="custom-subtitle">Upload a retinal image to detect possible eye diseases using CNN (MobileNetV2)</div>', unsafe_allow_html=True)
+
+# -----------------------------
+# File uploader
+# -----------------------------
+uploaded_file = st.file_uploader(
+    "📤 Drag & drop a retinal image here or click to browse (JPG, PNG, max 200MB)",
+    type=["jpg", "jpeg", "png"]
 )
 
-# ---------------------- LOAD MODEL ----------------------
-@st.cache_resource
-def load_model():
+if uploaded_file:
+    # Open image
+    image = Image.open(uploaded_file).convert("RGB")
+
+    # Resize image proportionally if too large
+    max_display_width = 300
+    w, h = image.size
+    if w > max_display_width:
+        new_height = int(h * (max_display_width / w))
+        image = image.resize((max_display_width, new_height))
+
+    # Display uploaded image
+    st.image(image, caption="Uploaded Retinal Image", use_column_width=False)
+
+    st.info("👁️ Running model inference...")
+
+    # -----------------------------
+    # Load TFLite model
+    # -----------------------------
     interpreter = tf.lite.Interpreter(model_path="MobileNetV2_model.tflite")
     interpreter.allocate_tensors()
-    return interpreter
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
 
-interpreter = load_model()
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
+    # Preprocess image for model
+    img = image.resize((224, 224))
+    img_array = np.array(img)/255.0
+    img_array = np.expand_dims(img_array, axis=0).astype(np.float32)
 
-# ---------------------- FILE UPLOAD ----------------------
-uploaded_file = st.file_uploader("📤 Choose a retinal image...", type=["jpg", "jpeg", "png"])
-
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Retinal Image", use_container_width=True)
-
-    # Preprocess the image
-    image = image.resize((224, 224))
-    input_data = np.expand_dims(np.array(image, dtype=np.float32) / 255.0, axis=0)
-
-    # Run model
-    interpreter.set_tensor(input_details[0]['index'], input_data)
+    # Run inference
+    interpreter.set_tensor(input_details[0]['index'], img_array)
     interpreter.invoke()
-    predictions = interpreter.get_tensor(output_details[0]['index'])[0]
+    output_data = interpreter.get_tensor(output_details[0]['index'])[0]
 
-    # Define class names
-    class_names = [
-        "Diabetic Retinopathy",
-        "Glaucoma",
-        "Cataract",
-        "Normal"
-    ]
+    # Predicted class and confidence
+    classes = ["Diabetic Retinopathy", "Glaucoma", "Cataract", "Normal"]
+    pred_class = np.argmax(output_data)
+    confidence = output_data[pred_class]
 
-    predicted_class = class_names[np.argmax(predictions)]
-    confidence = np.max(predictions) * 100
-
-    # Show results
-    st.success(f"✅ **Prediction:** {predicted_class}")
-    st.info(f"🎯 **Confidence:** {confidence:.2f}%")
+    # Display results in a purple gradient card
+    st.markdown(f"""
+        <div class="prediction-card">
+            ✅ Predicted Disease: <b>{classes[pred_class]}</b><br>
+            Confidence: {confidence*100:.2f}%
+        </div>
+    """, unsafe_allow_html=True)
 
 else:
-    st.warning("👁️ Please upload a retinal image to begin diagnosis.")
+    st.info("👁️ Please upload a retinal image to begin diagnosis.")
