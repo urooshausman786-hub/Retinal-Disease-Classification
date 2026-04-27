@@ -89,7 +89,6 @@ st.markdown("""
 # Header & Subtitle
 # -----------------------------
 st.markdown('<div class="custom-header">🩺 Retinal Disease Classification System</div>', unsafe_allow_html=True)
-st.markdown('<div class="custom-subtitle">Upload a retinal image to detect possible eye diseases using CNN (MobileNetV2)</div>', unsafe_allow_html=True)
 
 # -----------------------------
 # File uploader
