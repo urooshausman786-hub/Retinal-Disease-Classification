@@ -1,4 +1,4 @@
-## Retinal-Disease-Classification
+## Retinal-Disease-Classification-using-Deep-Learning
 Deep learning-based retinal disease classification using CNN and transfer learning
 This project classifies retinal diseases from fundus images using CNN and Transfer Learning models such as VGG16, DenseNet201, MobileNetV2, EfficientNetB0, ViT Small, and a custom Eye Disease Classifier.
 
